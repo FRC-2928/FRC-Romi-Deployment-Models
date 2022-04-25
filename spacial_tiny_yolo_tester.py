@@ -28,7 +28,7 @@ nnPath = str((Path(__file__).parent / Path(custom_blob_file)).resolve().absolute
 configPath = str((Path(__file__).parent / Path(custom_config_file)).resolve().absolute())
 
 print("Running spacial_tiny_yolo_wpi.py")
-print("Loading the model")
+print("Loading the model:", nnPath)
 if not Path(nnPath).exists():
     print("No custom model found at path " + nnPath)
     nnPath = str((Path(__file__).parent / Path(default_blob_file)).resolve().absolute())
