@@ -7,6 +7,6 @@ This repository stores deep learning models for deployment on a Raspberry Pi wit
 
 - `yolo-v3-tiny-tf_openvino_2021.4_6shave.blob` This is a model file that contains the weights and directed graph to detect 80 common objects.  The blob file format is designed to run specifically on an *OpenVINO* device.
 
-- `custom.blob` This model has been trained on the Rapid-React balls from the 2022 FRC Competition.
+- `custom.blob` This model has been trained on the Rapid-React balls from the 2022 FIRST Competition.
 
 
