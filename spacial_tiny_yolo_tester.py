@@ -22,7 +22,7 @@ frame_height = 416
 
 custom_blob_file = 'custom.blob'
 custom_config_file = 'custom_config.json'
-default_blob_file = 'yolo-v3-tiny-tf_openvino_2021.4_6shave.blob'
+default_blob_file = '../models/yolo-v3-tiny-tf_openvino_2021.4_6shave.blob'
 default_config_file = 'yolo-v3-tiny-tf.json'
 nnPath = str((Path(__file__).parent / Path(custom_blob_file)).resolve().absolute())
 configPath = str((Path(__file__).parent / Path(custom_config_file)).resolve().absolute())
