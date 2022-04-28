@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import os
 import json
 import numpy as np
 import threading
@@ -24,8 +25,18 @@ HTTP_SERVER_PORT = 8091
 # -------------------------------------------------------------------------
 # Main Program Start
 # -------------------------------------------------------------------------
-config_file = "/boot/frc.json"
-config_parser = ConfigParser(config_file)
+config_file = "frc.json"
+# For WPILibPi Romi image
+configPath = os.path.join('/boot', config_file)
+print("Looking for Romi config", configPath)
+
+if not Path(configPath).exists():
+    # Use the file with this package if not running on the Romi image
+    configPath = str((Path(__file__).parent / Path(config_file)).resolve().absolute())
+
+print("Using config", configPath)
+config_parser = ConfigParser(configPath)
+
 hardware_type = "OAK-D Camera"
 frame_width = 416
 frame_height = 416
