@@ -16,8 +16,12 @@ from wpi_helpers import ConfigParser, ThreadedHTTPServer, VideoStreamHandler, Ne
 
 '''
 Spatial Tiny-yolo example
-  Performs inference on RGB camera and retrieves spatial location coordinates: x,y,z relative to the center of depth map.
-  Can be used for tiny-yolo-v3 or tiny-yolo-v4 networks
+  Performs inference on RGB camera and retrieves spatial location 
+  coordinates: x,y,z relative to the center of depth map.
+  Detected objects are displayed to localhost:8091 
+  
+  The script uses the WPI Network Tables to send data back to the WPI program.
+  Can be used for tiny-yolo-v3 or tiny-yolo-v4 networks  
 '''
 HTTP_SERVER = '10.0.0.2'
 HTTP_SERVER_PORT = 8091
@@ -25,17 +29,9 @@ HTTP_SERVER_PORT = 8091
 # -------------------------------------------------------------------------
 # Main Program Start
 # -------------------------------------------------------------------------
-config_file = "frc.json"
-# For WPILibPi Romi image
-configPath = os.path.join('/boot', config_file)
-print("Looking for Romi config", configPath)
-
-if not Path(configPath).exists():
-    # Use the file with this package if not running on the Romi image
-    configPath = str((Path(__file__).parent / Path(config_file)).resolve().absolute())
-
-print("Using config", configPath)
-config_parser = ConfigParser(configPath)
+# Get the team number for use in the Network Tables
+config_file = "/boot/frc.json"
+config_parser = ConfigParser(config_file)
 
 hardware_type = "OAK-D Camera"
 frame_width = 416
@@ -43,8 +39,8 @@ frame_height = 416
 
 custom_blob_file = '../custom.blob'
 custom_config_file = '../custom_config.json'
-default_blob_file = 'yolo-v3-tiny-tf_openvino_2021.4_6shave.blob'
-default_config_file = 'yolo-v3-tiny-tf.json'
+default_blob_file = 'rapid-react.blob'
+default_config_file = 'rapid-react-config.json'
 nnPath = str((Path(__file__).parent / Path(custom_blob_file)).resolve().absolute())
 configPath = str((Path(__file__).parent / Path(custom_config_file)).resolve().absolute())
 

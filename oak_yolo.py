@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 
 """
-Get a tiny yolo v4 model and displays it to localhost:8091
+Gets a tiny yolo v4 model and displays detected objects to localhost:8091  
+The script uses the WPI Network Tables to send data back to the WPI program.
+Can be used for tiny-yolo-v3 or tiny-yolo-v4 networks
 """
 
 import json
@@ -23,16 +25,18 @@ HTTP_SERVER_PORT = 8091
 # -------------------------------------------------------------------------
 # Main Program Start
 # -------------------------------------------------------------------------
+# Get the team number for use in the Network Tables
 config_file = "/boot/frc.json"
 config_parser = ConfigParser(config_file)
+
 hardware_type = "OAK-D Camera"
 frame_width = 416
 frame_height = 416
 
 custom_blob_file = '../custom.blob'
 custom_config_file = '../custom_config.json'
-default_blob_file = 'yolo-v3-tiny-tf_openvino_2021.4_6shave.blob'
-default_config_file = 'yolo-v3-tiny-tf.json'
+default_blob_file = 'rapid-react.blob'
+default_config_file = 'rapid-react-config.json'
 nnPath = str((Path(__file__).parent / Path(custom_blob_file)).resolve().absolute())
 configPath = str((Path(__file__).parent / Path(custom_config_file)).resolve().absolute())
 

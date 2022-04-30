@@ -10,7 +10,11 @@ from wpi_helpers import NetworkConfigParser
 
 '''
 Spatial Tiny-yolo example
-  Performs inference on RGB camera and retrieves spatial location coordinates: x,y,z relative to the center of depth map.
+  Performs inference on RGB camera and retrieves spatial location 
+  coordinates: x,y,z relative to the center of depth map.
+  Detected objects are displayed in a window to the desktop GUI.
+
+  The script uses the WPI Network Tables to send data back to the WPI program.
   Can be used for tiny-yolo-v3 or tiny-yolo-v4 networks
 '''
 # -------------------------------------------------------------------------

@@ -3,5 +3,5 @@
 echo "Waiting 5 seconds..."
 sleep 5
 export PYTHONUNBUFFERED=1
-cd /home/pi/FRC-OAK-Deployment-Models
-exec /usr/bin/python3 tiny_yolo_wpi.py
+cd /home/pi/FRC-Romi-Deployment-Models
+exec /usr/bin/python3 oak_yolo_spacial.py
