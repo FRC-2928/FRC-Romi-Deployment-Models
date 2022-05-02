@@ -222,7 +222,7 @@ class Tester:
         width, height = self.input_size()
         h, w, _ = frame.shape
         # new_img = np.reshape(cv2.resize(frame, (300, 300)), (1, 300, 300, 3))
-        new_img = np.reshape(cv2.resize(frame, (300, 300)), (1, 300, 300, 3))
+        new_img = np.reshape(cv2.resize(frame, (240, 320)), (1, 320, 512, 3))
         self.interpreter.set_tensor(self.interpreter.get_input_details()[0]['index'], np.copy(new_img))
         return width / w, height / h
 
