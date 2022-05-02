@@ -2,7 +2,8 @@ import argparse
 
 import cv2
 import numpy as np
-from time import time
+import time
+# from time import time
 from pathlib import Path
 import tflite_runtime.interpreter as tflite
 from cscore import CameraServer, VideoSource, UsbCamera, MjpegServer
@@ -88,11 +89,7 @@ class Tester:
         # parser.parse()
         # self.labels = parser.get_labels()
 
-        # Connect to WPILib Network Tables
-        print("Connecting to Network Tables")
-        hardware_type = "USB Camera"
-        self.nt = WPINetworkTables(config_parser.team, hardware_type, self.model_config.labelMap)
-
+        
         # print("Connecting to Network Tables")
         # ntinst = NetworkTablesInstance.getDefault()
         # ntinst.startClientTeam(config_parser.team)
@@ -115,8 +112,13 @@ class Tester:
         self.output = cs.putVideo("Axon", WIDTH, HEIGHT)
         self.frames = 0
 
-        self.coral_entry.setString(self.hardware_type)
-        self.resolution_entry.setString(str(WIDTH) + ", " + str(HEIGHT))
+        # Connect to WPILib Network Tables
+        print("Connecting to Network Tables")
+        hardware_type = "USB Camera"
+        self.nt = WPINetworkTables(config_parser.team, hardware_type, self.model_config.labelMap)
+
+        # self.hardware_entry.setString(self.hardware_type)
+        # self.resolution_entry.setString(str(WIDTH) + ", " + str(HEIGHT))
 
     def run(self):
         print("Starting mainloop")
@@ -219,6 +221,7 @@ class Tester:
         """
         width, height = self.input_size()
         h, w, _ = frame.shape
+        # new_img = np.reshape(cv2.resize(frame, (300, 300)), (1, 300, 300, 3))
         new_img = np.reshape(cv2.resize(frame, (300, 300)), (1, 300, 300, 3))
         self.interpreter.set_tensor(self.interpreter.get_input_details()[0]['index'], np.copy(new_img))
         return width / w, height / h
