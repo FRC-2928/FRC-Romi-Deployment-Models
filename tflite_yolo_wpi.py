@@ -104,7 +104,7 @@ class Tester:
         print("Starting camera server")
         cs = CameraServer.getInstance()
         camera = cs.startAutomaticCapture()
-        camera_config = config_parser.cameras[0]
+        camera_config = config_parser.cameras[1]
         WIDTH, HEIGHT = camera_config["width"], camera_config["height"]
         camera.setResolution(WIDTH, HEIGHT)
         self.cvSink = cs.getVideo()
@@ -116,9 +116,6 @@ class Tester:
         print("Connecting to Network Tables")
         hardware_type = "USB Camera"
         self.nt = WPINetworkTables(config_parser.team, hardware_type, self.model_config.labelMap)
-
-        # self.hardware_entry.setString(self.hardware_type)
-        # self.resolution_entry.setString(str(WIDTH) + ", " + str(HEIGHT))
 
     def run(self):
         print("Starting mainloop")
@@ -221,7 +218,7 @@ class Tester:
         width, height = self.input_size()
         h, w, _ = frame.shape
         # new_img = np.reshape(cv2.resize(frame, (300, 300)), (1, 300, 300, 3))
-        new_img = np.reshape(cv2.resize(frame, (240, 320)), (1, 320, 512, 3))
+        new_img = np.reshape(cv2.resize(frame, (320, 512)), (1, 320, 512, 3))
         self.interpreter.set_tensor(self.interpreter.get_input_details()[0]['index'], np.copy(new_img))
         return width / w, height / h
 
