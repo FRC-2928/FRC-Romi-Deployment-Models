@@ -67,7 +67,7 @@ class Tester:
             self.hardware_type = "Coral Edge TPU"
         except:
             print("Failed to create Interpreter with Coral, switching to unoptimized")
-            model_path = "unoptimized.tflite"
+            model_path = "rapid-react.tflite"
             print(model_path)
             self.interpreter = tflite.Interpreter(model_path)
             self.hardware_type = "Unoptimized"
@@ -125,7 +125,6 @@ class Tester:
         fps = 0.0
         tic = time.time()
         while True:
-            start = time()
             # Acquire frame and resize to expected shape [1xHxWx3]
             ret, frame_cv2 = self.cvSink.grabFrame(self.img)
             if not ret:
