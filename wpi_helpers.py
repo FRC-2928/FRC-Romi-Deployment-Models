@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import json
+import time
 from time import sleep
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from io import BytesIO
@@ -10,6 +11,11 @@ from PIL import Image
 from pathlib import Path
 import sys
 import cv2
+from networktables import NetworkTablesInstance
+
+# Constants
+FRAME_WIDTH = 416
+FRAME_HEIGHT = 416
 
 class ConfigParser:
     def __init__(self, config_path):
@@ -65,7 +71,7 @@ class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
     """Handle requests in a separate thread."""
     pass
 
-class NetworkConfigParser:
+class ModelConfigParser:
     def __init__(self, path):
         """
         Parses the model config file and adjusts NNetManager values accordingly. 
@@ -89,7 +95,8 @@ class NetworkConfigParser:
         with configPath.open() as f:
             configJson = json.load(f)
             nnConfig = configJson.get("nn_config", {})
-            self.labelMap = configJson.get("mappings", {}).get("labels", None)
+            labels = configJson.get("mappings", {}).get("labels", None)
+            self.labelMap = {i: n for i, n in enumerate(labels)}
             self.nnFamily = nnConfig.get("NN_family", None)
             self.outputFormat = nnConfig.get("output_format", "raw")
             metadata = nnConfig.get("NN_specific_metadata", {})
@@ -98,3 +105,42 @@ class NetworkConfigParser:
 
             self.confidence_threshold = metadata.get("confidence_threshold", nnConfig.get("confidence_threshold", None))
             self.classes = metadata.get("classes", None)
+
+class WPINetworkTables():
+    """
+        The WPINetworkTables class is used to send inference data back to the WPI program.
+
+    # Arguments
+      labelMap: a dictionary used to translate class id to its name.
+    """
+
+    def __init__(self, team, hardware_type, labelMap):
+        self.labelMap = labelMap
+
+        ntinst = NetworkTablesInstance.getDefault()
+        ntinst.startClientTeam(team)
+        ntinst.startDSClient()
+        
+        self.hardware_entry = ntinst.getTable("ML").getEntry("device")
+        self.fps_entry = ntinst.getTable("ML").getEntry("fps")
+        self.resolution_entry = ntinst.getTable("ML").getEntry("resolution")
+        self.entry = ntinst.getTable("ML").getEntry("detections")
+
+        self.hardware_entry.setString(hardware_type)
+        self.resolution_entry.setString(str(FRAME_WIDTH) + ", " + str(FRAME_HEIGHT)) 
+        self.counter = 0  
+        self.startTime = time.monotonic()
+
+    def put_data(self, boxes, confidence, label, fps):
+        
+        for bb, cf, cl in zip(boxes, confidence, label):
+            temp_entry = []
+            cls_name = self.labelMap.get(int(cl))
+            xmin, ymin, xmax, ymax = bb[0], bb[1], bb[2], bb[3]
+            temp_entry.append({"label": cls_name, 
+                                "box": {"ymin": int(ymin), "xmin": int(xmin), "ymax": int(ymax), "xmax": int(xmax)}, 
+                                "confidence": float(cf)})                      
+            self.entry.setString(json.dumps(temp_entry))
+            self.fps_entry.setNumber(fps)
+            # self.fps_entry.setNumber((self.counter / (time.monotonic() - self.startTime)))
+            self.counter += 1     
