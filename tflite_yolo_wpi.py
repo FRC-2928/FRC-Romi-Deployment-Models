@@ -108,7 +108,7 @@ class Tester:
         WIDTH, HEIGHT = camera_config["width"], camera_config["height"]
         camera.setResolution(WIDTH, HEIGHT)
         self.cvSink = cs.getVideo()
-        self.img = np.zeros(shape=(HEIGHT, WIDTH, 3), dtype=np.uint8)
+        self.img = np.zeros(shape=(512, 320, 3), dtype=np.uint8)
         self.output = cs.putVideo("Axon", WIDTH, HEIGHT)
         self.frames = 0
 
@@ -217,8 +217,8 @@ class Tester:
         """
         width, height = self.input_size()
         h, w, _ = frame.shape
-        new_img = np.reshape(cv2.resize(frame.astype('float32'), (320, 300)), (1, 320, 300, 3))
-        # new_img = np.reshape(cv2.resize(frame, (320, 512)), (1, 320, 512, 3))
+        print(frame.shape)
+        new_img = np.reshape(cv2.resize(frame.astype('float32'), (320, 512)), (1, 320, 512, 3))
         self.interpreter.set_tensor(self.interpreter.get_input_details()[0]['index'], np.copy(new_img))
         return width / w, height / h
 
