@@ -108,7 +108,8 @@ class Tester:
         WIDTH, HEIGHT = camera_config["width"], camera_config["height"]
         camera.setResolution(WIDTH, HEIGHT)
         self.cvSink = cs.getVideo()
-        self.img = np.zeros(shape=(512, 320, 3), dtype=np.uint8)
+        self.img = np.zeros(shape=(320, 512, 3), dtype=np.uint8)
+        print(self.img.shape)
         self.output = cs.putVideo("Axon", WIDTH, HEIGHT)
         self.frames = 0
 
