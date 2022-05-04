@@ -212,7 +212,7 @@ class Tester:
     #     tensor = self.interpreter.get_tensor(self.output_details[i]['index'])
     #     return np.squeeze(tensor)
 
-    def filter_boxes(box_xywh, scores, score_threshold=0.4, input_shape = tflite.constant([416,416])):
+    def filter_boxes(box_xywh, scores, score_threshold=0.4, input_shape = [416,416]):
         scores_max = tflite.math.reduce_max(scores, axis=-1)
 
         mask = scores_max >= score_threshold
@@ -242,7 +242,7 @@ class Tester:
     def get_output(self, scale):
         pred = [self.interpreter.get_tensor(self.output_details[i]['index']) for i in range(len(self.output_details))]
         boxes, scores = self.filter_boxes(pred[0], pred[1], score_threshold=0.25,
-                                                input_shape=tflite.constant([width, height]))
+                                                input_shape=[width, height])
 
         boxes, scores, class_ids, valid_detections = tflite.image.combined_non_max_suppression(
             boxes=tflite.reshape(boxes, (tflite.shape(boxes)[0], -1, 1, 4)),
