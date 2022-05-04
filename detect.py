@@ -20,10 +20,10 @@ import cv2
 from object_detector import ObjectDetector
 from object_detector import ObjectDetectorOptions
 import utils
-
+import cscore as cs
 
 def run(model: str, camera_id: int, width: int, height: int, num_threads: int,
-        enable_edgetpu: bool) -> None:
+        enable_edgetpu: bool, mjpeg_port) -> None:
   """Continuously run inference on images acquired from the camera.
 
   Args:
@@ -43,6 +43,22 @@ def run(model: str, camera_id: int, width: int, height: int, num_threads: int,
   cap = cv2.VideoCapture(camera_id)
   cap.set(cv2.CAP_PROP_FRAME_WIDTH, width)
   cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
+
+  # cs = CameraServer.getInstance()
+  # camera = cs.startAutomaticCapture()
+  # # camera_config = config_parser.cameras[1]
+  # # WIDTH, HEIGHT = camera_config["width"], camera_config["height"]
+  # camera.setResolution(width, height)
+  # cvSink = cs.getVideo()
+  # # img = np.zeros(shape=(320, 512, 3), dtype=np.uint8)
+  # output = cs.putVideo("Axon", width, height)
+  # frames = 0
+
+  # Start the mjpeg server (default)
+  cvSource = cs.CvSource("cvsource", cs.VideoMode.PixelFormat.kMJPEG, width, height, 30)
+  mjpeg_server = cs.MjpegServer("httpserver", mjpeg_port)
+  mjpeg_server.setSource(cvSource)
+  print('MJPEG server started on port', mjpeg_port)
 
   # Visualization parameters
   row_size = 20  # pixels
@@ -93,10 +109,13 @@ def run(model: str, camera_id: int, width: int, height: int, num_threads: int,
     # Stop the program if the ESC key is pressed.
     if cv2.waitKey(1) == 27:
       break
-    cv2.imshow('object_detector', image)
+
+    # Display stream to browser
+    cvSource.putFrame(image)
+    # cv2.imshow('object_detector', image)
 
   cap.release()
-  cv2.destroyAllWindows()
+  # cv2.destroyAllWindows()
 
 
 def main():
@@ -133,10 +152,15 @@ def main():
       action='store_true',
       required=False,
       default=False)
+  parser.add_argument(
+        '-p', '--mjpeg_port', 
+        help='MJPEG server port [8080]',
+        type=int, 
+        default=8080)        
   args = parser.parse_args()
 
   run(args.model, int(args.cameraId), args.frameWidth, args.frameHeight,
-      int(args.numThreads), bool(args.enableEdgeTPU))
+      int(args.numThreads), bool(args.enableEdgeTPU), args.mjpeg_port)
 
 
 if __name__ == '__main__':
