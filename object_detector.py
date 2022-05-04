@@ -16,10 +16,12 @@
 import json
 import platform
 from typing import List, NamedTuple
+from pathlib import Path
 
 import cv2
 import numpy as np
 from tflite_support import metadata
+from wpi_helpers import ConfigParser, WPINetworkTables, ModelConfigParser
 
 # pylint: disable=g-import-not-at-top
 try:
@@ -113,41 +115,52 @@ class ObjectDetector:
     """
 
     # Load metadata from model.
-    displayer = metadata.MetadataDisplayer.with_model_file(model_path)
+    # displayer = metadata.MetadataDisplayer.with_model_file(model_path)
 
     # Save model metadata for preprocessing later.
-    model_metadata = json.loads(displayer.get_metadata_json())
-    process_units = model_metadata['subgraph_metadata'][0][
-        'input_tensor_metadata'][0]['process_units']
+    # model_metadata = json.loads(displayer.get_metadata_json())
+    # process_units = model_metadata['subgraph_metadata'][0][
+        # 'input_tensor_metadata'][0]['process_units']
     mean = 127.5
     std = 127.5
-    for option in process_units:
-      if option['options_type'] == 'NormalizationOptions':
-        mean = option['options']['mean'][0]
-        std = option['options']['std'][0]
+    # for option in process_units:
+    #   if option['options_type'] == 'NormalizationOptions':
+    #     mean = option['options']['mean'][0]
+    #     std = option['options']['std'][0]
     self._mean = mean
     self._std = std
 
     # Load label list from metadata.
-    file_name = displayer.get_packed_associated_file_list()[0]
-    label_map_file = displayer.get_associated_file_buffer(file_name).decode()
-    label_list = list(filter(len, label_map_file.splitlines()))
-    self._label_list = label_list
+    # file_name = displayer.get_packed_associated_file_list()[0]
+    # label_map_file = displayer.get_associated_file_buffer(file_name).decode()
+    # label_list = list(filter(len, label_map_file.splitlines()))
+    # self._label_list = label_list
 
     # Initialize TFLite model.
+    model_file_path = f"{model_path}.tflite"
     if options.enable_edgetpu:
       if edgetpu_lib_name() is None:
         raise OSError("The current OS isn't supported by Coral EdgeTPU.")
       interpreter = Interpreter(
-          model_path=model_path,
+          model_path=model_file_path,
           experimental_delegates=[load_delegate(edgetpu_lib_name())],
           num_threads=options.num_threads)
     else:
       interpreter = Interpreter(
-          model_path=model_path, num_threads=options.num_threads)
+          model_path=model_file_path, num_threads=options.num_threads)
 
     interpreter.allocate_tensors()
     input_detail = interpreter.get_input_details()[0]
+
+    ## Read the model configuration file
+    print("Loading network settings")
+    config_file_path = f"{model_path}.json"
+    configPath = str((Path(__file__).parent / Path(config_file_path)).resolve().absolute())    
+    self.model_config = ModelConfigParser(configPath)
+
+    print(self.model_config.labelMap)
+    print("Classes:", self.model_config.classes)
+    print("Confidence Threshold:", self.model_config.confidence_threshold)
 
     # From TensorFlow 2.6, the order of the outputs become undefined.
     # Therefore we need to sort the tensor indices of TFLite outputs and to know
@@ -258,7 +271,8 @@ class ObjectDetector:
         class_id = int(classes[i])
         category = Category(
             score=scores[i],
-            label=self._label_list[class_id],  # 0 is reserved for background
+            label=self.model_config.labelMap.get(int(class_id)),
+            # label=self._label_list[class_id],  # 0 is reserved for background
             index=class_id)
         result = Detection(bounding_box=bounding_box, categories=[category])
         results.append(result)
