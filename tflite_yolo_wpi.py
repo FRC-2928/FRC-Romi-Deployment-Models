@@ -205,13 +205,15 @@ class Tester:
 
     def output_tensor(self, i):
         """Returns output tensor view."""
+        print(f"index {i}")
         tensor = self.interpreter.get_tensor(self.interpreter.get_output_details()[i]['index'])
         return np.squeeze(tensor)
 
     def get_output(self, scale):
         boxes = self.output_tensor(0)
         class_ids = self.output_tensor(1)
-        scores = self.output_tensor(2)
+        # scores = self.output_tensor(2)
+        scores = []
 
         width, height = self.input_size()
         image_scale_x, image_scale_y = scale
