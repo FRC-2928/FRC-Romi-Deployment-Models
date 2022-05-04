@@ -76,7 +76,9 @@ class Tester:
 
         self.interpreter.allocate_tensors()
         self.input_detail = self.interpreter.get_input_details()[0]
+        self.output_details = self.interpreter.get_output_details()
         print(f"Model input shape {self.input_detail['shape']}")
+        print(f"Model output shape {self.output_details['shape']}")
 
         ## Read the model configuration file
         print("Loading network settings")
@@ -204,15 +206,56 @@ class Tester:
         self.interpreter.set_tensor(self.input_detail['index'], np.copy(new_img))
         return width / w, height / h
 
-    def output_tensor(self, i):
-        """Returns output tensor view."""
-        # print(f"index {i}")
-        tensor = self.interpreter.get_tensor(self.interpreter.get_output_details()[i]['index'])
-        return np.squeeze(tensor)
+    # def output_tensor(self, i):
+    #     """Returns output tensor view."""
+    #     # print(f"index {i}")
+    #     tensor = self.interpreter.get_tensor(self.output_details[i]['index'])
+    #     return np.squeeze(tensor)
+
+    def filter_boxes(box_xywh, scores, score_threshold=0.4, input_shape = tflite.constant([416,416])):
+        scores_max = tflite.math.reduce_max(scores, axis=-1)
+
+        mask = scores_max >= score_threshold
+        class_boxes = tflite.boolean_mask(box_xywh, mask)
+        pred_conf = tflite.boolean_mask(scores, mask)
+        class_boxes = tflite.reshape(class_boxes, [tflite.shape(scores)[0], -1, tflite.shape(class_boxes)[-1]])
+        pred_conf = tflite.reshape(pred_conf, [tflite.shape(scores)[0], -1, tflite.shape(pred_conf)[-1]])
+
+        box_xy, box_wh = tflite.split(class_boxes, (2, 2), axis=-1)
+
+        input_shape = tflite.cast(input_shape, dtype=tflite.float32)
+
+        box_yx = box_xy[..., ::-1]
+        box_hw = box_wh[..., ::-1]
+
+        box_mins = (box_yx - (box_hw / 2.)) / input_shape
+        box_maxes = (box_yx + (box_hw / 2.)) / input_shape
+        boxes = tflite.concat([
+            box_mins[..., 0:1],  # y_min
+            box_mins[..., 1:2],  # x_min
+            box_maxes[..., 0:1],  # y_max
+            box_maxes[..., 1:2]  # x_max
+        ], axis=-1)
+        # return tflite.concat([boxes, pred_conf], axis=-1)
+        return (boxes, pred_conf)
 
     def get_output(self, scale):
-        boxes = self.interpreter.get_tensor(self.interpreter.get_output_details()[0]['index'])
-        print(boxes)
+        pred = [self.interpreter.get_tensor(self.output_details[i]['index']) for i in range(len(self.output_details))]
+        boxes, scores = self.filter_boxes(pred[0], pred[1], score_threshold=0.25,
+                                                input_shape=tflite.constant([width, height]))
+
+        boxes, scores, class_ids, valid_detections = tflite.image.combined_non_max_suppression(
+            boxes=tflite.reshape(boxes, (tflite.shape(boxes)[0], -1, 1, 4)),
+            scores=tflite.reshape(
+                scores, (tflite.shape(scores)[0], -1, tflite.shape(scores)[-1])),
+            max_output_size_per_class=50,
+            max_total_size=50,
+            iou_threshold=0.45,
+            score_threshold=0.25
+        )
+
+        # boxes = self.interpreter.get_tensor(self.interpreter.get_output_details()[0]['index'])
+        # print(boxes)
         # boxes = self.output_tensor(0)
         # class_ids = self.output_tensor(1)
         # scores = self.output_tensor(2)
