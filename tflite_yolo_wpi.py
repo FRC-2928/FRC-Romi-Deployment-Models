@@ -196,7 +196,7 @@ class Tester:
         """
         width, height = self.input_size()
         h, w, _ = frame.shape
-        print(f"Frame shape {frame.shape}")
+        # print(f"Frame shape {frame.shape}")
 
         new_img = np.reshape(cv2.resize(frame.astype('float32'), (height, width)), (1, height, width, 3))
 
@@ -205,7 +205,7 @@ class Tester:
 
     def output_tensor(self, i):
         """Returns output tensor view."""
-        print(f"index {i}")
+        # print(f"index {i}")
         tensor = self.interpreter.get_tensor(self.interpreter.get_output_details()[i]['index'])
         return np.squeeze(tensor)
 
