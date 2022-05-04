@@ -154,7 +154,7 @@ class ObjectDetector:
 
     ## Read the model configuration file
     print("Loading network settings")
-    config_file_path = f"{model_path}.json"
+    config_file_path = f"{model_path}-config.json"
     configPath = str((Path(__file__).parent / Path(config_file_path)).resolve().absolute())    
     self.model_config = ModelConfigParser(configPath)
 

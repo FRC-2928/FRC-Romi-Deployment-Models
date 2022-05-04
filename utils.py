@@ -49,7 +49,8 @@ def visualize(
     category = detection.categories[0]
     class_name = category.label
     probability = round(category.score, 2)
-    result_text = class_name + ' (' + str(probability) + ')'
+    # result_text = class_name + ' (' + str(probability) + ')'
+    result_text = f"{class_name}({probability})"
     text_location = (_MARGIN + detection.bounding_box.left,
                      _MARGIN + _ROW_SIZE + detection.bounding_box.top)
     cv2.putText(image, result_text, text_location, cv2.FONT_HERSHEY_PLAIN,
