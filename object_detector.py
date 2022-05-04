@@ -175,6 +175,8 @@ class ObjectDetector:
     # (https://github.com/tensorflow/tensorflow/blob/a4fe268ea084e7d323133ed7b986e0ae259a2bc7/tensorflow/lite/kernels/detection_postprocess.cc#L47-L50).
     sorted_output_indices = sorted(
         [output['index'] for output in interpreter.get_output_details()])
+    print(f"Model outputs {sorted_output_indices}")   
+     
     self._output_indices = {
         self._OUTPUT_LOCATION_NAME: sorted_output_indices[0],
         self._OUTPUT_CATEGORY_NAME: sorted_output_indices[1],

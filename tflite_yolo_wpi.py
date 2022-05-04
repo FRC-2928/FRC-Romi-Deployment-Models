@@ -211,10 +211,11 @@ class Tester:
         return np.squeeze(tensor)
 
     def get_output(self, scale):
-        boxes = self.output_tensor(0)
-        class_ids = self.output_tensor(1)
+        boxes = self.interpreter.get_tensor(self.interpreter.get_output_details()[0]['index'])
+        print(boxes)
+        # boxes = self.output_tensor(0)
+        # class_ids = self.output_tensor(1)
         # scores = self.output_tensor(2)
-        scores = []
 
         width, height = self.input_size()
         image_scale_x, image_scale_y = scale
