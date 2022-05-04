@@ -198,7 +198,7 @@ class Tester:
         h, w, _ = frame.shape
         print(f"Frame shape {frame.shape}")
 
-        new_img = np.reshape(cv2.resize(frame.astype('float32'), (width, height)), (1, width, height, 3))
+        new_img = np.reshape(cv2.resize(frame.astype('float32'), (height, width)), (1, height, width, 3))
 
         self.interpreter.set_tensor(self.input_detail['index'], np.copy(new_img))
         return width / w, height / h
