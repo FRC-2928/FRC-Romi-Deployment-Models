@@ -78,7 +78,7 @@ class Tester:
         self.input_detail = self.interpreter.get_input_details()[0]
         self.output_details = self.interpreter.get_output_details()
         print(f"Model input shape {self.input_detail['shape']}")
-        print(f"Model output shape {self.output_details['shape']}")
+        print(f"Model output shape {self.output_details[0]['shape']}")
 
         ## Read the model configuration file
         print("Loading network settings")
@@ -93,14 +93,14 @@ class Tester:
         # Start the camera
         print("Starting camera server")
         cs = CameraServer.getInstance()
-        camera = cs.startAutomaticCapture()
+        cam = cs.startAutomaticCapture()
         camera_config = config_parser.cameras[1]
         WIDTH, HEIGHT = camera_config["width"], camera_config["height"]
-        camera.setResolution(WIDTH, HEIGHT)
-        self.cvSink = cs.getVideo()
+        cam.setResolution(WIDTH, HEIGHT)
+        self.camera = cs.getVideo()
         self.img = np.zeros(shape=(320, 512, 3), dtype=np.uint8)
         print(self.img.shape)
-        self.output = cs.putVideo("Axon", WIDTH, HEIGHT)
+        self.mjpegServer = cs.putVideo("TFLite", WIDTH, HEIGHT)
         self.frames = 0
 
         # Connect to WPILib Network Tables
@@ -113,7 +113,7 @@ class Tester:
         tic = time.time()
         while True:
             # Acquire image frame 
-            ret, frame_cv2 = self.cvSink.grabFrame(self.img)
+            ret, frame_cv2 = self.camera.grabFrame(self.img)
             if not ret:
                 print("Image failed")
                 continue
@@ -143,7 +143,7 @@ class Tester:
                                                  y_scale)
 
             # Display stream to browser                                     
-            self.output.putFrame(frame_cv2)
+            self.mjpegServer.putFrame(frame_cv2)
 
             # Put data to Network Tables
             self.nt.put_data(boxes, scores, class_ids, fps)

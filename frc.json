@@ -7,6 +7,14 @@
             "width": 160,
             "height": 120,
             "fps": 30
+        },
+        {
+            "name": "USB Camera",
+            "path": "/dev/video1",
+            "pixel format": "mjpeg",
+            "width": 480,
+            "height": 640,
+            "fps": 30
         }
     ],
     "ntmode": "client",
