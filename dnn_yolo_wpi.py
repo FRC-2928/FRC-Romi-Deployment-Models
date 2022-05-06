@@ -11,7 +11,12 @@ pip install robotpy-cscore
 
 You can run the file by using 
 
-python dnn_yolo_wpi.py --use_camera_server
+    python3 dnn_yolo_wpi.py
+
+To use the OpenCV camera
+
+    python3 dnn_yolo_wpi.py --use_cv2_camera
+
 '''
 
 
@@ -37,9 +42,9 @@ def parse_args():
         help="minimum probability to filter weak detections, IoU threshold")
     ap.add_argument("-t", "--threshold", type=float, default=0.3,
         help="threshold when applying non-maxima suppression")
-    ap.add_argument("-s", "--use_camera_server", action='store_true',
-        help="use cscore CameraServer")  
-    ap.set_defaults(use_camera_server=True)         
+    ap.add_argument("-s", "--use_cv2_camera", action='store_true',
+        help="use the OpenCV camera")  
+    ap.set_defaults(use_cv2_camera=False)         
     ap.add_argument("-f", "--frc_config", type=str, required=False,
         default='/boot/frc.json',
         help="FRC config file path")  
@@ -71,15 +76,6 @@ def main():
     config_file = args.frc_config
     config_parser = ConfigParser(config_file)
 
-    # load the COCO class labels our YOLO model was trained on
-    print(f"Using model {args.model}")
-    labelsPath = f"{args.model}.names"
-    LABELS = open(labelsPath).read().strip().split("\n")
-
-    # initialize a list of colors to represent each possible class label
-    COLORS = np.random.randint(0, 255, size=(len(LABELS), 3),
-        dtype="uint8")
-
     # paths to the YOLO weights and model configuration
     weightsPath = f"{args.model}.weights"
     configPath = f"{args.model}.cfg"
@@ -95,38 +91,54 @@ def main():
     camera_config = config_parser.cameras[1]
     WIDTH, HEIGHT = camera_config["width"], camera_config["height"]
     
-    if args.use_camera_server:
+    if args.use_cv2_camera is True:
+        # Use regular OpenCV camera
+        camera = start_camera(WIDTH, HEIGHT)
+        mjpegServer = False       
+    else:    
+        # Use robotpy-cscore camera server
         cs = start_cameraServer(WIDTH, HEIGHT)   
         camera = cs.getVideo()
         mjpegServer = cs.putVideo("OpenCV DNN", WIDTH, HEIGHT)
-    else:    
-        camera = start_camera(WIDTH, HEIGHT)
-        mjpegServer = False
+        img = np.zeros(shape=(WIDTH, HEIGHT, 3), dtype=np.uint8)
 
     try:
-        run(camera, net, layerNames, args, COLORS, LABELS, mjpegServer=mjpegServer)
+        run(camera, net, layerNames, args, img=img, mjpegServer=mjpegServer)
     except Exception as e:
         print(e)
     finally:
         print("Done...")
-        if args.use_camera_server is False:
+        if args.use_cv2_camera is True:
             camera.release()
 
-def run(camera, net, layerNames, args, COLORS, LABELS, mjpegServer):
-    # image = []
+def run(camera,  net, layerNames, args, img, mjpegServer):
+
+    # load the COCO class labels our YOLO model was trained on
+    labelsPath = f"{args.model}.names"
+    LABELS = open(labelsPath).read().strip().split("\n")
+
+    # initialize a list of colors to represent each possible class label
+    COLORS = np.random.randint(0, 255, size=(len(LABELS), 3),
+        dtype="uint8")
+
     while True:
 
         if args.image is True:
             # loads a test input image     
             image = cv2.imread(args.image)   
-        elif args.use_camera_server is True:    
-            success, image = camera.grabframe()        
-        else:
+        elif args.use_cv2_camera is True:   
+            # read from the OpenCV camera
             success, image = camera.read()
             if not success:
                 sys.exit(
                     'ERROR: Unable to read from webcam. Please verify your webcam settings.'
-            )
+            )            
+        else:
+            # read from robotpy-cscore camera server
+            success, image = camera.grabFrame(img)   
+            if not success:
+                print("Image failed")
+                continue    
 
         # Get its spatial dimensions
         (H, W) = image.shape[:2]   
