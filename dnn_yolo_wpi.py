@@ -11,7 +11,7 @@ pip install robotpy-cscore
 
 You can run the file by using 
 
-python dnn_yolo_wpi.py --image images/ipl.jpeg
+python dnn_yolo_wpi.py --use_camera_server
 '''
 
 
@@ -31,7 +31,7 @@ def parse_args():
         help="path to input test image [False]")
     ap.set_defaults(image=False)   
     ap.add_argument("-m", "--model", type=str, required=False,
-        default='yolo-coco/rapid-react',
+        default='rapid-react',
         help="model file path")  
     ap.add_argument("-c", "--confidence", type=float, default=0.5,
         help="minimum probability to filter weak detections, IoU threshold")
@@ -39,7 +39,7 @@ def parse_args():
         help="threshold when applying non-maxima suppression")
     ap.add_argument("-s", "--use_camera_server", action='store_true',
         help="use cscore CameraServer")  
-    ap.set_defaults(use_camera_server=False)         
+    ap.set_defaults(use_camera_server=True)         
     ap.add_argument("-f", "--frc_config", type=str, required=False,
         default='/boot/frc.json',
         help="FRC config file path")  
