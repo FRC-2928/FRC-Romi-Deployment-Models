@@ -64,7 +64,7 @@ def start_cameraServer(WIDTH, HEIGHT):
     return cs
 
 def start_camera(WIDTH, HEIGHT):
-    camera = cv2.VideoCapture(0)
+    camera = cv2.VideoCapture(1)
     camera.set(cv2.CAP_PROP_FRAME_WIDTH, WIDTH)
     camera.set(cv2.CAP_PROP_FRAME_HEIGHT, HEIGHT)
     return camera    
@@ -90,7 +90,8 @@ def main():
     # Start the camera
     camera_config = config_parser.cameras[1]
     WIDTH, HEIGHT = camera_config["width"], camera_config["height"]
-    
+    img = np.zeros(shape=(WIDTH, HEIGHT, 3), dtype=np.uint8)
+
     if args.use_cv2_camera is True:
         # Use regular OpenCV camera
         camera = start_camera(WIDTH, HEIGHT)
@@ -100,7 +101,7 @@ def main():
         cs = start_cameraServer(WIDTH, HEIGHT)   
         camera = cs.getVideo()
         mjpegServer = cs.putVideo("OpenCV DNN", WIDTH, HEIGHT)
-        img = np.zeros(shape=(WIDTH, HEIGHT, 3), dtype=np.uint8)
+        
 
     try:
         run(camera, net, layerNames, args, img=img, mjpegServer=mjpegServer)
@@ -130,9 +131,7 @@ def run(camera,  net, layerNames, args, img, mjpegServer):
             # read from the OpenCV camera
             success, image = camera.read()
             if not success:
-                sys.exit(
-                    'ERROR: Unable to read from webcam. Please verify your webcam settings.'
-            )            
+                sys.exit('ERROR: Unable to read from webcam. Please verify your webcam settings.')            
         else:
             # read from robotpy-cscore camera server
             success, image = camera.grabFrame(img)   
@@ -141,7 +140,8 @@ def run(camera,  net, layerNames, args, img, mjpegServer):
                 continue    
 
         # Get its spatial dimensions
-        (H, W) = image.shape[:2]   
+        (H, W) = image.shape[:2] 
+        print(image.shape[:2])
 
         # construct a blob from the input image and then perform a forward
         # pass of the YOLO object detector, giving us our bounding boxes and
