@@ -9,13 +9,15 @@ pip install argparse
 pip install pillow
 pip install robotpy-cscore
 
-You can run the file by using 
+To run this on the Romi:
 
     python3 dnn_yolo_wpi.py
 
-To use the OpenCV camera
+Output is displayed to http://wpilibpi.local:1182    
 
-    python3 dnn_yolo_wpi.py --use_cv2_camera
+If you're on a PC you can use the OpenCV camera in GUI desktop window 
+
+    python3 dnn_yolo_wpi.py --use_cv2_camera --frc_config frc.json
 
 '''
 
@@ -141,7 +143,6 @@ def run(camera,  net, layerNames, args, img, mjpegServer):
 
         # Get its spatial dimensions
         (H, W) = image.shape[:2] 
-        print(image.shape[:2])
 
         # construct a blob from the input image and then perform a forward
         # pass of the YOLO object detector, giving us our bounding boxes and
