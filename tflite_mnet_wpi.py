@@ -11,7 +11,7 @@ import collections
 import json
 import sys
 from pathlib import Path
-from wpi_helpers import ConfigParser, WPINetworkTables, ModelConfigParser
+from wpi_helpers import ConfigParser, WPINetworkTables, PBTXTParser, Camera
 
 def parse_args():
     # construct the argument parse and parse the arguments
@@ -50,35 +50,6 @@ def start_camera(WIDTH, HEIGHT):
     camera.set(cv2.CAP_PROP_FRAME_WIDTH, WIDTH)
     camera.set(cv2.CAP_PROP_FRAME_HEIGHT, HEIGHT)
     return camera   
-
-class PBTXTParser:
-    def __init__(self, path):
-        self.path = path
-        self.file = None
-
-    def parse(self):
-        with open(self.path, 'r') as f:
-            self.file = ''.join([i.replace('item', '') for i in f.readlines()])
-            blocks = []
-            obj = ""
-            for i in self.file:
-                if i == '}':
-                    obj += i
-                    blocks.append(obj)
-                    obj = ""
-                else:
-                    obj += i
-            self.file = blocks
-            label_map = []
-            for obj in self.file:
-                obj = [i for i in obj.split('\n') if i]
-                name = obj[2].split()[1][1:-1]
-                label_map.append(name)
-            self.file = label_map
-
-    def get_labels(self):
-        return self.file
-
 
 class BBox(collections.namedtuple('BBox', ['xmin', 'ymin', 'xmax', 'ymax'])):
     """Bounding box.
@@ -132,41 +103,25 @@ class Tester:
         parser.parse()
         self.labels = parser.get_labels()
 
-        print("Connecting to Network Tables")
-        hardware_type = "USB Camera"
-        self.nt = WPINetworkTables(config_parser.team, hardware_type, self.labels)
-
+        # Start the camera
         print("Starting camera server")
-        camera_config = config_parser.cameras[0]
-        WIDTH, HEIGHT = camera_config["width"], camera_config["height"]
-        self.img = np.zeros(shape=(HEIGHT, WIDTH, 3), dtype=np.uint8)
-        if args.use_cv2_camera is True:
-            # Use regular OpenCV camera
-            self.camera = start_camera(WIDTH, HEIGHT)
-            self.mjpegServer = False       
-        else:    
-            # Use robotpy-cscore camera server
-            cs = start_cameraServer(WIDTH, HEIGHT)   
-            self.camera = cs.getVideo()
-            self.mjpegServer = cs.putVideo("OpenCV DNN", WIDTH, HEIGHT)
-
-        # cs = CameraServer.getInstance()
-        # camera = cs.startAutomaticCapture()
+        self.camera = Camera(config_parser)
         # camera_config = config_parser.cameras[0]
         # WIDTH, HEIGHT = camera_config["width"], camera_config["height"]
-        # camera.setResolution(WIDTH, HEIGHT)
-        # self.cvSink = cs.getVideo()
         # self.img = np.zeros(shape=(HEIGHT, WIDTH, 3), dtype=np.uint8)
-        # self.output = cs.putVideo("Axon", WIDTH, HEIGHT)
-        # self.frames = 0
-
-        # self.coral_entry.setString(self.hardware_type)
-        # self.resolution_entry.setString(str(WIDTH) + ", " + str(HEIGHT))
+        # if args.use_cv2_camera is True:
+        #     # Use regular OpenCV camera
+        #     self.camera = start_camera(WIDTH, HEIGHT)
+        #     # self.mjpegServer = False       
+        # else:    
+        #     # Use robotpy-cscore camera server
+        #     cs = start_cameraServer(WIDTH, HEIGHT)   
+            # self.camera = cs.getVideo()
+            # self.mjpegServer = cs.putVideo("OpenCV DNN", WIDTH, HEIGHT)
 
         # Connect to WPILib Network Tables
         print("Connecting to Network Tables")
         self.nt = WPINetworkTables(config_parser.team, self.hardware_type, self.labels)
-
 
     def run(self):
         print("Starting mainloop")
@@ -179,7 +134,8 @@ class Tester:
                     sys.exit('ERROR: Unable to read from webcam. Please verify your webcam settings.')            
             else:
                 # read from robotpy-cscore camera server
-                success, frame_cv2 = self.camera.grabFrame(self.img)   
+                # success, frame_cv2 = self.camera.grabFrame(self.img) 
+                success, frame_cv2 = self.camera.read()  
                 if not success:
                     print("Image failed")
                     continue    
@@ -207,10 +163,11 @@ class Tester:
                                                  y_scale)
 
             # show the output image
-            if self.mjpegServer is False:
-                cv2.imshow("Image", frame_cv2)
-            else:
-                self.mjpegServer.putFrame(frame_cv2)
+            self.camera.output(frame_cv2)
+            # if self.mjpegServer is False:
+            #     cv2.imshow("Image", frame_cv2)
+            # else:
+            #     self.mjpegServer.putFrame(frame_cv2)
             
             # Put data to Network Tables
             self.nt.put_data(boxes, scores, class_ids)

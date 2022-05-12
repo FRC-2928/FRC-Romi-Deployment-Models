@@ -11,12 +11,41 @@ from socketserver import ThreadingMixIn
 from PIL import Image
 from pathlib import Path
 import sys
+import numpy as np
 import cv2
 from networktables import NetworkTablesInstance
 
 # Constants
 FRAME_WIDTH = 416
 FRAME_HEIGHT = 416
+
+class PBTXTParser:
+    def __init__(self, path):
+        self.path = path
+        self.file = None
+
+    def parse(self):
+        with open(self.path, 'r') as f:
+            self.file = ''.join([i.replace('item', '') for i in f.readlines()])
+            blocks = []
+            obj = ""
+            for i in self.file:
+                if i == '}':
+                    obj += i
+                    blocks.append(obj)
+                    obj = ""
+                else:
+                    obj += i
+            self.file = blocks
+            label_map = []
+            for obj in self.file:
+                obj = [i for i in obj.split('\n') if i]
+                name = obj[2].split()[1][1:-1]
+                label_map.append(name)
+            self.file = label_map
+
+    def get_labels(self):
+        return self.file
 
 class ConfigParser:
     def __init__(self):
@@ -117,6 +146,45 @@ class ModelConfigParser:
 
             self.confidence_threshold = metadata.get("confidence_threshold", nnConfig.get("confidence_threshold", None))
             self.classes = metadata.get("classes", None)
+
+class Camera():
+    def __init__(self, config_parser):
+        camera_config = config_parser.cameras[0]
+        WIDTH, HEIGHT = camera_config["width"], camera_config["height"]
+
+        try:
+            # Use CameraServer if installed
+            from cscore import CameraServer
+            print("Starting camera server")
+            cs = CameraServer.getInstance()
+            cam = cs.startAutomaticCapture()
+            cam.setResolution(WIDTH, HEIGHT)
+            camera = cs.getVideo()
+            self.img = np.zeros(shape=(HEIGHT, WIDTH, 3), dtype=np.uint8)
+            self.mjpegServer = cs.putVideo("OpenCV DNN", WIDTH, HEIGHT)
+        except ModuleNotFoundError:
+            # Else use OpenCV camera
+            print("Starting cv2 camera")
+            camera = cv2.VideoCapture(0)
+            camera.set(cv2.CAP_PROP_FRAME_WIDTH, WIDTH)
+            camera.set(cv2.CAP_PROP_FRAME_HEIGHT, HEIGHT)
+            self.mjpegServer = False
+
+        self.camera = camera   
+
+    def read(self):
+        if self.mjpegServer is False:
+            return self.camera.read()   
+        else:
+            return self.camera.grabFrame(self.img)
+
+    def output(self, frame):    
+        # show the output image
+        if self.mjpegServer is False:
+            cv2.imshow("Image", frame)
+        else:
+            self.mjpegServer.putFrame(frame)          
+        
 
 class WPINetworkTables():
     """
