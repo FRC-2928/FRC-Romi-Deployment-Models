@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import os
 import json
 import time
 from time import sleep
@@ -18,8 +19,19 @@ FRAME_WIDTH = 416
 FRAME_HEIGHT = 416
 
 class ConfigParser:
-    def __init__(self, config_path):
+    def __init__(self):
         self.team = -1
+
+        # Get the FRC config file path. For WPILibPi Romi image this file 
+        # is at /boot.  
+        config_path = os.path.join('/boot', 'frc.json')
+
+        # For testing check the current directory
+        if not Path(config_path).exists():
+            # Use the file with this package if not running on the Romi image
+            config_path = os.path.join('frc.json')
+
+        print("Using config", config_path)
 
         # parse file
         try:
@@ -128,19 +140,24 @@ class WPINetworkTables():
 
         self.hardware_entry.setString(hardware_type)
         self.resolution_entry.setString(str(FRAME_WIDTH) + ", " + str(FRAME_HEIGHT)) 
-        self.counter = 0  
         self.startTime = time.monotonic()
+        self.fps = 0
 
-    def put_data(self, boxes, confidence, label, fps):
+    def put_data(self, boxes, confidence, class_ids):
         
-        for bb, cf, cl in zip(boxes, confidence, label):
+        for bb, cf, cl in zip(boxes, confidence, class_ids):
             temp_entry = []
-            cls_name = self.labelMap.get(int(cl))
+            cls_name = self.labelMap[int(cl)]
             xmin, ymin, xmax, ymax = bb[0], bb[1], bb[2], bb[3]
             temp_entry.append({"label": cls_name, 
                                 "box": {"ymin": int(ymin), "xmin": int(xmin), "ymax": int(ymax), "xmax": int(xmax)}, 
                                 "confidence": float(cf)})                      
             self.entry.setString(json.dumps(temp_entry))
-            self.fps_entry.setNumber(fps)
-            # self.fps_entry.setNumber((self.counter / (time.monotonic() - self.startTime)))
-            self.counter += 1     
+          
+            if self.fps % 100 == 0:
+                print("Completed", self.fps, "frames. FPS:", (1 / (time.monotonic() - self.startTime)))
+
+            # if self.fps % 10 == 0:
+                # self.fps_entry.setNumber((1 / (time.monotonic() - self.startTime)))
+
+            self.fps += 1    

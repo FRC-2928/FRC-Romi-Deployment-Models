@@ -122,27 +122,19 @@ class Tester:
         outname = self.output_details[0]['name']
         
         if ('StatefulPartitionedCall' in outname): # This is a TF2 model
-            self.boxes_idx, self.classes_idx, self.scores_idx = 1, 3, 0
+            self.boxes_idx, self.classes_idx, self.scores_idx, self.count_idx = 1, 3, 0, 2
         else: # This is a TF1 model
-            self.boxes_idx, self.classes_idx, self.scores_idx = 0, 1, 2
+            self.boxes_idx, self.classes_idx, self.scores_idx, self.count_idx = 0, 1, 2, 3
 
         print("Getting labels")
         pbtxt_file = f"{args.model}.pbtxt"
-        # pbtxtPath = str((Path(__file__).parent / Path(pbtxt_file)).resolve().absolute())
         parser = PBTXTParser(pbtxt_file)
         parser.parse()
         self.labels = parser.get_labels()
 
         print("Connecting to Network Tables")
-        # ntinst = NetworkTablesInstance.getDefault()
-        # ntinst.startClientTeam(config_parser.team)
-        # ntinst.startDSClient()
-        # self.entry = ntinst.getTable("ML").getEntry("detections")
-
-        # self.coral_entry = ntinst.getTable("ML").getEntry("coral")
-        # self.fps_entry = ntinst.getTable("ML").getEntry("fps")
-        # self.resolution_entry = ntinst.getTable("ML").getEntry("resolution")
-        # self.temp_entry = []
+        hardware_type = "USB Camera"
+        self.nt = WPINetworkTables(config_parser.team, hardware_type, self.labels)
 
         print("Starting camera server")
         camera_config = config_parser.cameras[0]
@@ -179,12 +171,7 @@ class Tester:
     def run(self):
         print("Starting mainloop")
         while True:
-            start = time()
-            # Acquire frame and resize to expected shape [1xHxWx3]
-            # ret, frame_cv2 = self.cvSink.grabFrame(self.img)
-            # if not ret:
-            #     print("Image failed")
-            #     continue
+            
             if args.use_cv2_camera is True:   
                 # read from the OpenCV camera
                 success, frame_cv2 = self.camera.read()
@@ -205,7 +192,6 @@ class Tester:
 
             # get output
             boxes, class_ids, scores, count, x_scale, y_scale = self.get_output(scale)
-            print(count)
             for i in range(count):
                 if scores[i] > .5:
 
@@ -220,21 +206,14 @@ class Tester:
                     frame_cv2 = self.label_frame(frame_cv2, self.labels[class_id], boxes[i], scores[i], x_scale,
                                                  y_scale)
 
-            # self.output.putFrame(frame_cv2)
-
             # show the output image
             if self.mjpegServer is False:
                 cv2.imshow("Image", frame_cv2)
             else:
                 self.mjpegServer.putFrame(frame_cv2)
-
-            # self.entry.setString(json.dumps(self.temp_entry))
-            # self.temp_entry = []
-            # if self.frames % 100 == 0:
-            #     print("Completed", self.frames, "frames. FPS:", (1 / (time() - start)))
-            # if self.frames % 10 == 0:
-            #     self.fps_entry.setNumber((1 / (time() - start)))
-            # self.frames += 1
+            
+            # Put data to Network Tables
+            self.nt.put_data(boxes, scores, class_ids)
 
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
@@ -287,9 +266,9 @@ class Tester:
         h, w, _ = frame.shape
         floating_model = (self.input_detail['dtype'] == np.float32)
         if floating_model:
-            new_img = np.reshape(cv2.resize(frame.astype('float32'), (320, 320)), (1, 320, 320, 3))
+            new_img = np.reshape(cv2.resize(frame.astype('float32'), (width, height)), (1, width, height, 3))
         else:
-            new_img = np.reshape(cv2.resize(frame.astype('uint8'), (320, 320)), (1, 320, 320, 3))
+            new_img = np.reshape(cv2.resize(frame.astype('uint8'), (width, height)), (1, width, height, 3))
         self.interpreter.set_tensor(self.interpreter.get_input_details()[0]['index'], np.copy(new_img))
         return width / w, height / h
 
@@ -305,7 +284,7 @@ class Tester:
         boxes = self.output_tensor(self.boxes_idx)
         class_ids = self.output_tensor(self.classes_idx)
         scores = self.output_tensor(self.scores_idx)
-        count = int(self.output_tensor(2))
+        count = int(self.output_tensor(self.count_idx))
 
         width, height = self.input_size()
         image_scale_x, image_scale_y = scale
@@ -317,9 +296,9 @@ if __name__ == '__main__':
     args = parse_args()
 
     # Load the FRC configuration file
-    frcConfigPath = str((Path(__file__).parent / Path(args.frc_config)).resolve().absolute())
-    print(f"FRC config file path {frcConfigPath}")
-    config_parser = ConfigParser(frcConfigPath)
+    # frcConfigPath = str((Path(__file__).parent / Path(args.frc_config)).resolve().absolute())
+    # print(f"FRC config file path {frcConfigPath}")
+    config_parser = ConfigParser()
 
     tester = Tester(args, config_parser)
     tester.run()
