@@ -195,8 +195,9 @@ class Tester:
             self.interpreter.invoke()
 
             # output
-            boxes, class_ids, scores, x_scale, y_scale = self.get_output(scale)
-            for i in range(len(boxes)):
+            boxes, class_ids, scores, count, x_scale, y_scale = self.get_output(scale)
+            print(count)
+            for i in range(count):
                 if scores[i] > .5:
 
                     class_id = class_ids[i]
@@ -343,11 +344,12 @@ class Tester:
         boxes = self.output_tensor(0)
         class_ids = self.output_tensor(1)
         scores = self.output_tensor(2)
+        count = self.output_tensor(3)
 
         width, height = self.input_size()
         image_scale_x, image_scale_y = scale
         x_scale, y_scale = width / image_scale_x, height / image_scale_y
-        return boxes, class_ids, scores, x_scale, y_scale
+        return boxes, class_ids, scores, count, x_scale, y_scale
 
 
 if __name__ == '__main__':
