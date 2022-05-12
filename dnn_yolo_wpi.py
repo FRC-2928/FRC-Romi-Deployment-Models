@@ -3,11 +3,14 @@ PRE-REQUISITES:
 
 Install the packages:
 
-pip install opencv-python==3.4.2
 pip install numpy
 pip install argparse
 pip install pillow
+
+You may also need to install these if not deploying to the Romi:
+
 pip install robotpy-cscore
+pip install opencv-python==3.4.2
 
 To run this on the Romi:
 
@@ -28,6 +31,7 @@ import argparse
 import time
 import cv2
 import sys
+from pathlib import Path
 from wpi_helpers import ConfigParser, WPINetworkTables
 # from cscore import CameraServer
 
@@ -66,7 +70,7 @@ def start_cameraServer(WIDTH, HEIGHT):
     return cs
 
 def start_camera(WIDTH, HEIGHT):
-    camera = cv2.VideoCapture(1)
+    camera = cv2.VideoCapture(0)
     camera.set(cv2.CAP_PROP_FRAME_WIDTH, WIDTH)
     camera.set(cv2.CAP_PROP_FRAME_HEIGHT, HEIGHT)
     return camera    
@@ -79,8 +83,10 @@ def main():
     config_parser = ConfigParser(config_file)
 
     # paths to the YOLO weights and model configuration
-    weightsPath = f"{args.model}.weights"
-    configPath = f"{args.model}.cfg"
+    weights_file = f"{args.model}.weights"
+    cfg_file = f"{args.model}.cfg"
+    weightsPath = str((Path(__file__).parent / Path(weights_file)).resolve().absolute())
+    configPath = str((Path(__file__).parent / Path(cfg_file)).resolve().absolute())
 
     # load our YOLO object detector trained on COCO dataset (80 classes)
     net = cv2.dnn.readNetFromDarknet(configPath, weightsPath)
@@ -147,8 +153,7 @@ def run(camera,  net, layerNames, args, img, mjpegServer):
         # construct a blob from the input image and then perform a forward
         # pass of the YOLO object detector, giving us our bounding boxes and
         # associated probabilities
-        blob = cv2.dnn.blobFromImage(image, 1 / 255.0, (416, 416),
-            swapRB=True, crop=False)
+        blob = cv2.dnn.blobFromImage(image, 1 / 255.0, (416, 416), swapRB=True, crop=False)
         net.setInput(blob)
         layerOutputs = net.forward(layerNames)
 
