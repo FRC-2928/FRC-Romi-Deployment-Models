@@ -28,7 +28,7 @@ def parse_args():
         help="threshold when applying non-maxima suppression")
     ap.add_argument("-s", "--use_cv2_camera", action='store_true',
         help="use the OpenCV camera")  
-    ap.set_defaults(use_cv2_camera=True)         
+    ap.set_defaults(use_cv2_camera=False)         
     ap.add_argument("-f", "--frc_config", type=str, required=False,
         default='/boot/frc.json',
         help="FRC config file path")  
@@ -286,9 +286,9 @@ class Tester:
         h, w, _ = frame.shape
         floating_model = (self.input_detail['dtype'] == np.float32)
         if floating_model:
-            new_img = np.reshape(cv2.resize(frame.astype('float32'), (300, 300)), (1, 300, 300, 3))
+            new_img = np.reshape(cv2.resize(frame.astype('float32'), (320, 320)), (1, 320, 320, 3))
         else:
-            new_img = np.reshape(cv2.resize(frame.astype('uint8'), (300, 300)), (1, 300, 300, 3))
+            new_img = np.reshape(cv2.resize(frame.astype('uint8'), (320, 320)), (1, 320, 320, 3))
         self.interpreter.set_tensor(self.interpreter.get_input_details()[0]['index'], np.copy(new_img))
         return width / w, height / h
 
