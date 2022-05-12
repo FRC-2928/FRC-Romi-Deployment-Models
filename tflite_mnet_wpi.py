@@ -117,6 +117,15 @@ class Tester:
         print(f"Model input shape {self.input_detail['shape']}")
         print(f"Model output shape {self.output_details[0]}")
 
+        # Check output layer name to determine if this model was created with TF2 or TF1,
+        # because outputs are ordered differently for TF2 and TF1 models
+        outname = self.output_details[0]['name']
+        
+        if ('StatefulPartitionedCall' in outname): # This is a TF2 model
+            self.boxes_idx, self.classes_idx, self.scores_idx = 1, 3, 0
+        else: # This is a TF1 model
+            self.boxes_idx, self.classes_idx, self.scores_idx = 0, 1, 2
+
         print("Getting labels")
         pbtxt_file = f"{args.model}.pbtxt"
         # pbtxtPath = str((Path(__file__).parent / Path(pbtxt_file)).resolve().absolute())
@@ -194,7 +203,7 @@ class Tester:
             # run inference
             self.interpreter.invoke()
 
-            # output
+            # get output
             boxes, class_ids, scores, count, x_scale, y_scale = self.get_output(scale)
             print(count)
             for i in range(count):
@@ -274,15 +283,6 @@ class Tester:
           Actual resize ratio, which should be passed to `get_output` function.
         """
         width, height = self.input_size()
-        
-        # Check output layer name to determine if this model was created with TF2 or TF1,
-        # because outputs are ordered differently for TF2 and TF1 models
-        outname = self.output_details[0]['name']
-
-        if ('StatefulPartitionedCall' in outname): # This is a TF2 model
-            boxes_idx, classes_idx, scores_idx = 1, 3, 0
-        else: # This is a TF1 model
-            boxes_idx, classes_idx, scores_idx = 0, 1, 2
 
         h, w, _ = frame.shape
         floating_model = (self.input_detail['dtype'] == np.float32)
@@ -299,52 +299,13 @@ class Tester:
         tensor = self.interpreter.get_tensor(self.interpreter.get_output_details()[i]['index'])
         return np.squeeze(tensor)
 
-    def filter_boxes(box_xywh, scores, score_threshold=0.4, input_shape = [416,416]):
-        scores_max = tflite.math.reduce_max(scores, axis=-1)
-
-        mask = scores_max >= score_threshold
-        class_boxes = tflite.boolean_mask(box_xywh, mask)
-        pred_conf = tflite.boolean_mask(scores, mask)
-        class_boxes = tflite.reshape(class_boxes, [tflite.shape(scores)[0], -1, tflite.shape(class_boxes)[-1]])
-        pred_conf = tflite.reshape(pred_conf, [tflite.shape(scores)[0], -1, tflite.shape(pred_conf)[-1]])
-
-        box_xy, box_wh = tflite.split(class_boxes, (2, 2), axis=-1)
-
-        input_shape = tflite.cast(input_shape, dtype=tflite.float32)
-
-        box_yx = box_xy[..., ::-1]
-        box_hw = box_wh[..., ::-1]
-
-        box_mins = (box_yx - (box_hw / 2.)) / input_shape
-        box_maxes = (box_yx + (box_hw / 2.)) / input_shape
-        boxes = tflite.concat([
-            box_mins[..., 0:1],  # y_min
-            box_mins[..., 1:2],  # x_min
-            box_maxes[..., 0:1],  # y_max
-            box_maxes[..., 1:2]  # x_max
-        ], axis=-1)
-        # return tflite.concat([boxes, pred_conf], axis=-1)
-        return (boxes, pred_conf)
-
     def get_output(self, scale):
-        # pred = [self.interpreter.get_tensor(self.output_details[i]['index']) for i in range(len(self.output_details))]
-        # boxes, scores = self.filter_boxes(pred[0], pred[1], score_threshold=0.25,
-        #                                         input_shape=[width, height])
-
-        # boxes, scores, class_ids, valid_detections = tflite.image.combined_non_max_suppression(
-        #     boxes=tflite.reshape(boxes, (tflite.shape(boxes)[0], -1, 1, 4)),
-        #     scores=tflite.reshape(
-        #         scores, (tflite.shape(scores)[0], -1, tflite.shape(scores)[-1])),
-        #     max_output_size_per_class=50,
-        #     max_total_size=50,
-        #     iou_threshold=0.45,
-        #     score_threshold=0.25
-        # )
-
-        boxes = self.output_tensor(0)
-        class_ids = self.output_tensor(1)
-        scores = self.output_tensor(2)
-        count = self.output_tensor(3)
+        
+        # self.boxes_idx, self.classes_idx, self.scores_idx = 1, 3, 0
+        boxes = self.output_tensor(self.boxes_idx)
+        class_ids = self.output_tensor(self.classes_idx)
+        scores = self.output_tensor(self.scores_idx)
+        count = int(self.output_tensor(2))
 
         width, height = self.input_size()
         image_scale_x, image_scale_y = scale
