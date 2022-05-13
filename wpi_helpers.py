@@ -40,7 +40,8 @@ class PBTXTParser:
             label_map = []
             for obj in self.file:
                 obj = [i for i in obj.split('\n') if i]
-                name = obj[2].split()[1][1:-1]
+                # This may be obj[2] with a different pbtxt file format
+                name = obj[3].split()[1][1:-1]
                 label_map.append(name)
             self.file = label_map
 

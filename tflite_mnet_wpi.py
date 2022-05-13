@@ -102,6 +102,7 @@ class Tester:
         parser = PBTXTParser(pbtxt_file)
         parser.parse()
         self.labels = parser.get_labels()
+        print(self.labels)
 
         # Start the camera
         print("Starting camera server")
@@ -159,6 +160,7 @@ class Tester:
                     if class_id not in range(len(self.labels)):
                         continue
 
+                    print(f"Class ID {class_id} Name {self.labels[class_id]}")
                     frame_cv2 = self.label_frame(frame_cv2, self.labels[class_id], boxes[i], scores[i], x_scale,
                                                  y_scale)
 
@@ -189,15 +191,16 @@ class Tester:
             return frame
 
         ymin, xmin, ymax, xmax = int(bbox.ymin), int(bbox.xmin), int(bbox.ymax), int(bbox.xmax)
-        self.temp_entry = []
-        self.temp_entry.append({"label": object_name, "box": {"ymin": ymin, "xmin": xmin, "ymax": ymax, "xmax": xmax},
-                                "confidence": score})
+        # self.temp_entry = []
+        # self.temp_entry.append({"label": object_name, "box": {"ymin": ymin, "xmin": xmin, "ymax": ymax, "xmax": xmax},
+        #                         "confidence": score})
 
         cv2.rectangle(frame, (xmin, ymin), (xmax, ymax), (10, 255, 0), 4)
 
         # Draw label
         # Look up object name from "labels" array using class index
         label = '%s: %d%%' % (object_name, score * 100)  # Example: 'person: 72%'
+        print(label)
         label_size, base = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.7, 2)  # Get font size
         label_ymin = max(ymin, label_size[1] + 10)  # Make sure not to draw label too close to top of window
         cv2.rectangle(frame, (xmin, label_ymin - label_size[1] - 10), (xmin + label_size[0], label_ymin + base - 10),
